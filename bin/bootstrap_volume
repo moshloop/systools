@@ -1,0 +1,65 @@
+#!/bin/bash
+if [[ "$1" == "" ]]; then
+    echo "USAGE: bootstrap_volume <dev> <mount> <format> <owner>"
+    echo "Automatically partitions, formats and mounts a device"
+    exit 0
+fi
+DEV=$1
+if [[ "$DEV" == *"1" ]]; then
+    PART="${DEV}"
+else
+    PART="${DEV}1"
+fi
+MOUNT=$2
+FORMAT=$3
+OWNER=$4
+
+until ls /dev | grep $(basename $DEV); do
+    echo "Waiting for $DEV to attach"
+    sleep 5
+done
+
+if ! parted $DEV  -s print | grep $FORMAT >/dev/null 2>&1; then
+        echo "Partitioning $DEV"
+        if [[ "$DEV" != "$PART" ]]; then
+            parted $DEV  -s mklabel gpt || echo Failed to mklabel
+        fi
+        parted $DEV -s -a optimal mkpart primary 0% 100%
+
+    if [[ "$MOUNT" != "" ]]; then
+        echo "Formatting:  mkfs.$FORMAT $PART"
+        mkfs.$FORMAT $PART
+        if ! cat /etc/fstab | grep $MOUNT >/dev/null 2>&1; then
+
+            echo "Saving mount to /etc/fstab"
+            echo "$PART $MOUNT $FORMAT defaults,nofail,x-systemd.device-timeout=4  0 0 " >> /etc/fstab
+        fi
+        if [[ -e $MOUNT ]]; then
+            echo $MOUNT already exists copying existing contents
+            mv $MOUNT $MOUNT.bak
+            mount -a
+            mv $MOUNT.bak/* $MOUNT/
+            rm -rf $MOUNT.bak
+        else
+            mkdir -p $MOUNT
+            mount -a
+        fi
+        mount -a
+    else
+        echo "Skipping raw device $PART"
+    fi
+else
+    echo "$DEV is already partitioned"
+fi
+
+if [[ "$OWNER" != "" ]]; then
+    if [[ "$OWNER" != "$(stat --format '%U' $MOUNT)" ]]; then
+        echo "Changing ownership of $MOUNT to $OWNER"
+        chown -R $OWNER:$OWNER $MOUNT
+    fi
+fi
+
+
+#pvcreate /dev/sdb1
+#vgcreate VolGroup /dev/sdb1
+# lvcreate -L 10M -n web01 VolData00

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_service <systemd_unit_name> <command>"
+    exit 0
+fi
+
+NAME=$1
+echo "installing $NAME"
+RUN=$2
+Type=${Type:=simple}
+RunAs=${User:=root}
+WantedBy=${WantedBy:=multi-user.target}
+CONTENT=$(cat <<-END
+[Unit]
+Description=$NAME
+
+[Service]
+EnvironmentFile=-/etc/environment
+Type=$Type
+ExecStart=$RUN
+User=$RunAs
+
+[Install]
+WantedBy=$WantedBy
+END
+    )
+
+echo "$CONTENT" > /usr/lib/systemd/system/$NAME.service
+systemctl enable $NAME
+systemctl start $NAME

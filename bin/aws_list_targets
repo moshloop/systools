@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [[ "$AWS_REGION" == "" ]]; then
+    ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    AWS_REGION=${ZONE:0:${#ZONE}-1}
+fi
+
+arn=$(aws elbv2 describe-load-balancers --region $AWS_REGION --names $1 | jq -r '.LoadBalancers[0].LoadBalancerArn')
+for target in $(aws elbv2 describe-target-groups --region $AWS_REGION --load-balancer-arn "$arn" | jq -r '.TargetGroups[] | .TargetGroupArn'); do
+    aws elbv2 describe-target-health --region $AWS_REGION --target-group-arn $target | jq -r ".TargetHealthDescriptions[] | [.Target.Id,.Target.Port, .TargetHealth.State] | @csv" |  sed 's/"//g'
+done

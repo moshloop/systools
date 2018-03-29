@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_git_sync <git_repo> <local path>"
+    echo "Clones a git repo into the specified path and sets up a timer to keep it updated"
+    echo "git_sync automatically installs git hooks from the .hooks directory"
+    exit 0
+fi
+
+
+REPO=$1
+CLONE=$2
+git clone $1 $2
+cd $2
+
+CONTENT=$(cat <<-END
+#!/bin/bash
+if [[ -e "$CLONE/.hooks/post-merge" ]]; then
+    $CLONE/.hooks/post-merge
+fi
+END
+)
+echo "$CONTENT"  > .git/hooks/post-merge
+chmod +x .git/hooks/post-merge
+
+WorkingDirectory=$2 install_timer git-sync "/usr/bin/git pull" minutely
+bash .git/hooks/post-merge

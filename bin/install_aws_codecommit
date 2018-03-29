@@ -1,0 +1,36 @@
+#!/bin/bash
+
+
+REGION=${AWS_REGION:=eu-west-1}
+ACCOUNT=$1
+ROLE=$2
+HELPER="helper = !aws codecommit credential-helper \$@"
+
+if [ "$ACCOUNT" != "" ]; then
+    PROFILE=${PROFILE:=CDN}
+
+    if ! cat ~/.aws/config | grep $ACCOUNT; then
+        mkdir -p ~/.aws
+AWSCONFIG=$(cat <<-END
+[profile $PROFILE]
+region=$REGION
+role_arn=arn:aws:iam::$ACCOUNT:role/$ROLE
+credential_source=Ec2InstanceMetadata
+END
+)
+
+    echo "$AWSCONFIG" >> ~/.aws/config
+    fi
+    HELPER="helper = !aws --profile $PROFILE codecommit credential-helper \$@"
+fi
+
+
+if ! cat /etc/gitconfig | grep codecommit; then
+GITCONFIG=$(cat <<-END
+[credential]
+$HELPER
+UseHttpPath = true
+END
+)
+echo "$GITCONFIG" >> /etc/gitconfig
+fi

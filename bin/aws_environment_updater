@@ -1,0 +1,110 @@
+#!/bin/bash
+
+if [[ "$1" == "--help" ]]; then
+    echo "USAGE: aws_environment_updater [ENVIRONMENT]"
+    echo ""
+    echo "Updates /etc/environment inline with the following variables:"
+    echo "AMI_ID, AWS_REGION, ZONE, INSTANCE_ID, INSTANCE_TYPE, RESERVATION_ID"
+    echo "'ROLE' with a list of all instance ip's that are tagged with the same ROLE key=value pair in AWS"
+    echo "If ENVIRONMENT is specifed then instances are filtered using ENVIORNMENT key=value pair in AWS"
+    echo "All secrets stored in AWS SSM under $ENVIRONMENT/secrets are downloaded and stored in /etc/secrets.json"
+    echo ""
+    echo "To keep /etc/environment continously up todate as new instances are stopped and launched run:"
+    echo ""
+    echo "install_timer aws-sync aws_environment_updater 5minutes"
+    exit 0
+
+fi
+if [[ "$1" != "" ]]; then
+    environment=$1
+fi
+if [[ "$environment" == "" && "$env" != "" ]]; then
+    environment=$env
+fi
+
+ZONE=$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/placement/availability-zone)
+if [[ "$ZONE" != "" ]]; then
+    AWS_REGION=${ZONE:0:${#ZONE}-1}
+    AMI_ID=$(curl -s --connect-timeout 3  http://169.254.169.254/latest/meta-data/ami-id)
+    INSTANCE_ID=$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/instance-id)
+    INSTANCE_TYPE=$(curl -s --connect-timeout 3  http://169.254.169.254/latest/meta-data/instance-type)
+    RESERVATION_ID=$(curl -s --connect-timeout 3  http://169.254.169.254/latest/meta-data/reservation-id)
+fi
+
+filters="--filters Name=instance-state-name,Values=running Name=tag:ENVIRONMENT,Values=$environment"
+
+    CONTENT=$(cat <<-END
+#!/usr/bin/python
+import sys
+import json
+import re
+
+env = open("/etc/environment").read()
+instances = json.loads(sys.stdin.read())
+
+results={
+    "instances": [],
+    "aws_region": ["$AWS_REGION"],
+    "ami_id": ["$AMI_ID"],
+    "zone": ["$ZONE"],
+    "instance_id": ["$INSTANCE_ID"],
+    "instance_type": ["$INSTANCE_TYPE"]
+}
+for res in instances['Reservations']:
+    for instance in res['Instances']:
+        ip=instance.get('PrivateIpAddress', '')
+        tags={}
+        for tag in instance['Tags']:
+            tags[tag['Key']] = tag['Value']
+        role = tags.get("ROLE",'')
+        purpose = tags.get("PURPOSE",'')
+        stack = tags.get("aws:cloudformation:stack-name",'')
+        if role != purpose:
+            role = role + "-" + purpose
+        if role != '':
+            if role not in results:
+                results[role] = []
+            results[role].append(ip)
+        if stack != '':
+            if stack not in results:
+                results[stack] = []
+            results[stack].append(ip)
+        results['instances'].append(ip)
+
+_results=dict(results)
+for k in _results:
+    role=k.replace("-","_").upper()
+    value="%s=%s" % (role, ",".join(results[k]))
+    if (role + "=") in env:
+        env = re.sub("^" + role + "=.*$", value, env, 1, re.MULTILINE)
+    else:
+        env = env + "\n" + value
+
+if not env.endswith("\n"):
+    env = env + "\n"
+with open('/etc/environment', 'w') as f:
+    f.write(env)
+END
+    )
+instances=$(aws ec2 describe-instances --region $AWS_REGION $filters 2>&1)
+if [[ "$?" != "0" ]]; then
+    echo "$instances"
+    exit 1
+fi
+instances=$(echo "$instances" | python -c "$CONTENT" 2>&1)
+echo "$instances"
+
+if [[ "$?" != "0" ]]; then
+    echo $instances
+    exit 1
+fi
+
+secrets=$(aws ssm get-parameters-by-path --path /$environment/secrets --with-decryption | python -c "import json, sys; print(json.dumps({v['Name'].split(\"/\")[-1]: v['Value'] for v in json.loads(sys.stdin.read())['Parameters']}))")
+
+if [[ "$?" != "0" ]]; then
+    exit 1
+fi
+if [[ ! -e /etc/secrets.json || "$(cat /etc/secrets.json)" != "$secrets" ]]; then
+    echo "$secrets" > /etc/secrets.json
+    chmod 0600 /etc/secrets.json
+fi

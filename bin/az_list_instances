@@ -1,0 +1,4 @@
+#!/bin/bash
+
+nic=$(az vm list | jq -r '.[0].networkProfile.networkInterfaces[0].id')
+az network nic ip-config list --resource-group Test --ids $nic | jq -r '.[0].privateIpAddress'

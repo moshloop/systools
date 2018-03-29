@@ -1,0 +1,11 @@
+#!/bin/bash
+if [[ "$1" == "" ]]; then
+    echo "USAGE: if_exists <file> || command that creates <file>"
+    exit 0
+fi
+
+if [[ -e "$1" ]]; then
+    exit 0
+else
+    exit 1
+fi

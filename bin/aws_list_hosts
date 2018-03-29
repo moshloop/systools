@@ -1,0 +1,9 @@
+#!/bin/bash
+
+ip=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+host=$(hostname)
+domain=$(cat /etc/resolv.conf  | grep search | cut -d" " -f2)
+echo 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+echo ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+echo $ip $host.$domain $host
+aws_list_instances | jq -r '.instances[] | [.ip,.name] | @csv' | sed 's/"//g' | sed 's/,/ /'

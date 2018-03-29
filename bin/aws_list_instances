@@ -1,0 +1,80 @@
+#!/bin/bash
+
+
+if [[ "$AWS_REGION" == "" ]]; then
+    ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    if [[ "$ZONE" == "" ]]; then
+        echo region lookup failed, must specify AWS_REGION
+        exit 1
+    fi
+    AWS_REGION=${ZONE:0:${#ZONE}-1}
+fi
+
+if [[ "$1" != "" ]]; then
+    environment=$1
+fi
+if [[ "$environment" == "" && "$env" != "" ]]; then
+    environment=$env
+fi
+
+
+    CONTENT=$(cat <<-"END"
+#!/usr/bin/python
+import sys
+import json
+
+instances = json.loads(sys.stdin.read())
+
+results={
+    "instances": []
+}
+for res in instances['Reservations']:
+    for instance in res['Instances']:
+        ip=instance.get('PrivateIpAddress', '')
+        tags={}
+        for tag in instance['Tags']:
+            tags[tag['Key']] = tag['Value']
+        result={
+            "ip": ip,
+            "name": tags.get('Name', ''),
+            "purpose": tags.get("PURPOSE",''),
+            "role": tags.get("ROLE",''),
+            "env": tags.get("ENVIRONMENT", '').lower(),
+            "launched": instance.get('LaunchTime', ''),
+            "ami": instance.get('ImageId', ''),
+            "stack": tags.get("aws:cloudformation:stack-name",'')
+            }
+        role = result['role']
+        if role != result['purpose']:
+            role = role + "-" + result['purpose']
+        if role != '':
+            if role not in results:
+                results[role] = []
+            results[role].append(result)
+        results['instances'].append(result)
+
+_results =dict(results)
+for k in _results:
+    if k is "instances":
+        continue
+    results[k + "_count"] = len(results[k])
+print(json.dumps(results))
+END
+    )
+
+filters="--filters Name=instance-state-name,Values=running Name=tag:ENVIRONMENT,Values=$environment"
+aws ec2 describe-instances --region $AWS_REGION $filters | python -c "$CONTENT"
+
+instances=$(aws ec2 describe-instances --region $AWS_REGION $filters 2>&1)
+if [[ "$?" != "0" ]]; then
+    echo "$instances"
+    exit 1
+fi
+instances=$(echo "$instances" | python -c "$CONTENT" 2>&1)
+echo "$instances"
+if [[ "$?" == "0" ]]; then
+    exit 0
+else
+    exit 1
+fi
+

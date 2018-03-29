@@ -1,0 +1,60 @@
+#!/bin/bash
+
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_timer <name> <command> [systemd time unit]"
+    exit 0
+fi
+
+NAME=$1
+SERVICE=/usr/lib/systemd/system/$NAME.service
+
+if [[ ! e $SERVICE ]]; then
+
+echo "installing $NAME"
+RUN=$2
+
+TIMER=$3
+if [[ "$TIMER" == "" ]]; then
+    TIMER=minutely
+fi
+Type=${Type:=simple}
+RunAs=${User:=root}
+WORK=${WorkingDirectory:=/}
+
+CONTENT=$(cat <<-END
+[Unit]
+Description=$NAME
+
+[Timer]
+OnCalendar=$TIMER
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
+END
+    )
+echo "$CONTENT" > /usr/lib/systemd/system/$NAME.timer
+
+
+CONTENT=$(cat <<-END
+[Unit]
+Description=$NAME
+
+[Service]
+EnvironmentFile=-/etc/environment
+WorkingDirectory=$WORK
+Type=$Type
+ExecStart=$RUN
+User=$RunAs
+END
+    )
+
+echo "$CONTENT" > $SERVICE
+
+systemctl start $NAME.timer
+systemctl enable $NAME.timer
+fi
+
+
+
+

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_service_override <systemd_unit> key=value [key2=value]"
+    exit 0
+fi
+
+unit=$1
+shift
+CONTENT="[Service]"
+for arg in  $@; do
+    CONTENT=$CONTENT$'\n'$arg
+done
+
+mkdir /etc/systemd/system/$unit.service.d/
+echo "$CONTENT" > /etc/systemd/system/$unit.service.d/10-override.conf
