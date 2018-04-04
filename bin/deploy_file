@@ -1,0 +1,20 @@
+#!/bin/bash
+
+URL=$1
+NAME=$(basename $URL)
+DIR=$2
+FILE=$DIR/$NAME
+
+if [[ ! -e $FILE ]]; then
+    echo "Downloading $NAME to $FULL_PATH"
+    if wget -nv -O /tmp/$NAME $URL; then
+        mv /tmp/$NAME $FILE
+    else
+        echo "Download failed"
+        exit 1
+    fi
+elif [[ "$DEBUG" == "true" ]]; then
+    echo "$FILE already exists"
+fi
+
+

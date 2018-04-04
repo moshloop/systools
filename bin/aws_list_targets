@@ -1,7 +1,13 @@
 #!/bin/bash
 
+if [[ "$1" == "" ]]; then
+    echo "USAGE: aws_list_targets <ELB Name>"
+    echo "List instances registered with an ELB by instance-id, port and state"
+    exit 0
+fi
+
 if [[ "$AWS_REGION" == "" ]]; then
-    ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    ZONE=$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/placement/availability-zone)
     AWS_REGION=${ZONE:0:${#ZONE}-1}
 fi
 

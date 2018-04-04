@@ -1,0 +1,19 @@
+#!/bin/bash
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_bin  <name|url> [name2|url2]"
+    echo "Check if a bin exists before attempting to install, exits with 1 if any packages get installed"
+    exit 0
+fi
+code=0
+for pkg in "$@"
+do
+    name=$( basename $pkg)
+    name=${name%.*}
+    if [[ ! -e /usr/bin/$name ]]; then
+        curl -k $pkg > /usr/bin/$name
+        chmod +x /usr/bin/$name
+        code=1
+    fi
+done
+
+exit $code
