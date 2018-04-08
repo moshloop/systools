@@ -9,16 +9,16 @@ fi
 if [ -f $1 ] ; then
   TAR="tar --keep-newer-files "
   case $1 in
-    *.tar.bz2)   $TAR --bzip2 -f $1    ;;
-    *.tar.gz)    $TAR --gzip -f $1    ;;
-    *.tar.xz)    $TAR --xz -f $1    ;;
+    *.tar.bz2)   $TAR --bzip2 -xf $1    ;;
+    *.tar.gz)    $TAR --gzip -xf $1    ;;
+    *.tar.xz)    $TAR --xz -xf $1    ;;
     *.lzma)      unlzma $1      ;;
     *.bz2)       bunzip2 $1     ;;
     *.rar)       unrar x -ad $1 ;;
     *.gz)        gunzip $1      ;;
-    *.tar)       $TAR -f $1     ;;
-    *.tbz2)      $TAR --bzip2 -f $1    ;;
-    *.tgz)       $TAR --gzip -f $1    ;;
+    *.tar)       $TAR -xf $1     ;;
+    *.tbz2)      $TAR --bzip2 -xf $1    ;;
+    *.tgz)       $TAR --gzip -xf $1    ;;
     *.zip)       unzip -nq $1       ;;
     *.Z)         uncompress $1  ;;
     *.7z)        7z x $1        ;;
