@@ -62,7 +62,11 @@ print(json.dumps(results))
 END
     )
 
-filters="--filters Name=instance-state-name,Values=running Name=tag:ENVIRONMENT,Values=$environment"
+filters="--filters Name=instance-state-name,Values=running "
+
+if [[ "$environment" != "all" && "$environment" != "" ]]; then
+    filters="$filters Name=tag:ENVIRONMENT,Values=$environment"
+fi
 aws ec2 describe-instances --region $AWS_REGION $filters | python -c "$CONTENT"
 
 instances=$(aws ec2 describe-instances --region $AWS_REGION $filters 2>&1)
@@ -71,7 +75,6 @@ if [[ "$?" != "0" ]]; then
     exit 1
 fi
 instances=$(echo "$instances" | python -c "$CONTENT" 2>&1)
-echo "$instances"
 if [[ "$?" == "0" ]]; then
     exit 0
 else
