@@ -5,15 +5,20 @@ if [[ "$AWS_REGION" == "" ]]; then
     AWS_REGION=${ZONE:0:${#ZONE}-1}
 fi
 
+target=$1
 instance=$2
 
 if [[ "$instance" == "self" ]]; then
     instance=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 fi
 
-echo "Registering: $instance"
+>&2  echo "Registering: $instance"
 arn=$(aws elbv2 describe-load-balancers --region $AWS_REGION --names $1 | jq -r '.LoadBalancers[0].LoadBalancerArn')
 
-for target in $(aws elbv2 describe-target-groups --region $AWS_REGION --load-balancer-arn "$arn" | jq -r '.TargetGroups[] | .TargetGroupArn'); do
-    aws elbv2 register-targets --region $AWS_REGION --target-group-arn $target --targets Id=$instance
-done
+if [[ "$arn" != "" ]]; then
+    for target in $(aws elbv2 describe-target-groups --region $AWS_REGION --load-balancer-arn "$arn" | jq -r '.TargetGroups[] | .TargetGroupArn'); do
+        aws elbv2 register-targets --region $AWS_REGION --target-group-arn $target --targets Id=$instance
+    done
+else
+        aws elb register-instances-with-load-balancer --region $AWS_REGION --load-balancer-name $1 --instances $instance
+fi
