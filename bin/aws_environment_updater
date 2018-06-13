@@ -59,12 +59,15 @@ for res in instances['Reservations']:
         role = tags.get("ROLE",'')
         purpose = tags.get("PURPOSE",'')
         stack = tags.get("aws:cloudformation:stack-name",'')
-        if role != purpose:
-            role = role + "-" + purpose
         if role != '':
             if role not in results:
                 results[role] = []
             results[role].append(ip)
+        if role != purpose and role != '':
+            role = role + "-" + purpose
+            if role not in results:
+                results[role] = []
+            role = results[role].append(ip)
         if stack != '':
             if stack not in results:
                 results[stack] = []
@@ -75,7 +78,7 @@ _results=dict(results)
 for k in _results:
     role=k.replace("-","_").upper()
     value="%s=%s" % (role, ",".join(results[k]))
-    if (role + "=") in env:
+    if re.search("^" + role + "=", env, re.MULTILINE) != None:
         env = re.sub("^" + role + "=.*$", value, env, 1, re.MULTILINE)
     else:
         env = env + "\n" + value
@@ -99,12 +102,5 @@ if [[ "$?" != "0" ]]; then
     exit 1
 fi
 
-secrets=$(aws ssm get-parameters-by-path --path /$environment/secrets --with-decryption | python -c "import json, sys; print(json.dumps({v['Name'].split(\"/\")[-1]: v['Value'] for v in json.loads(sys.stdin.read())['Parameters']}))")
 
-if [[ "$?" != "0" ]]; then
-    exit 1
-fi
-if [[ ! -e /etc/secrets.json || "$(cat /etc/secrets.json)" != "$secrets" ]]; then
-    echo "$secrets" > /etc/secrets.json
-    chmod 0600 /etc/secrets.json
-fi
+aws_secret_updater

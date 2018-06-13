@@ -8,14 +8,15 @@ fi
 code=0
 for pkg in "$@"
 do
-
     name=$( basename $pkg)
     name=${name%.*}
-
-    if ! rpm -qa | grep -e "^$name.*" 2>&1 > /dev/null; then
+    tmp=/tmp/$(basename $pkg)
+    if ! rpm -q $name  2>&1 > /dev/null;  then
         code=1
-        if [[ "$pkg" == *http:* || "$pkg" == *https://* ]]; then
-             yum --nogpgcheck -y  localinstall  $pkg
+        if [[ "$pkg" == *"http:"* || "$pkg" == *"https://"* ]]; then
+            curl -k $pkg > $tmp
+            yum --nogpgcheck -y  localinstall  $tmp
+            rm $tmp
         else
             yum install -y $pkg
         fi

@@ -6,4 +6,4 @@ domain=$(cat /etc/resolv.conf  | grep search | cut -d" " -f2)
 echo 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 echo ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 echo $ip $host.$domain $host
-aws_list_instances | jq -r '.instances[] | [.ip,.name] | @csv' | sed 's/"//g' | sed 's/,/ /'
+aws_list_instances $1 | jq -r '.instances[] | [.ip,.name] | @csv' | sed 's/"//g' | sed 's/,/ /' | sort -k 2 | uniq

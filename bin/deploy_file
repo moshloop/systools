@@ -7,7 +7,8 @@ FILE=$DIR/$NAME
 
 if [[ ! -e $FILE ]]; then
     echo "Downloading $NAME to $FULL_PATH"
-    if wget -nv -O /tmp/$NAME $URL; then
+    if wget --no-check-certificate -nv -O /tmp/$NAME $URL; then
+        mkdir -p $DIR
         mv /tmp/$NAME $FILE
     else
         echo "Download failed"

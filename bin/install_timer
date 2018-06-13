@@ -8,7 +8,12 @@ fi
 NAME=$1
 SERVICE=/usr/lib/systemd/system/$NAME.service
 
-if [[ ! e $SERVICE ]]; then
+if [[ -e $SERVICE ]]; then
+    if [[ "$DEBUG" == "true" ]]; then
+        echo "$SERVICE already installed"
+    fi
+    exit 0
+fi
 
 echo "installing $NAME"
 RUN=$2
@@ -53,8 +58,3 @@ echo "$CONTENT" > $SERVICE
 
 systemctl start $NAME.timer
 systemctl enable $NAME.timer
-fi
-
-
-
-

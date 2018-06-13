@@ -12,5 +12,5 @@ for arg in  $@; do
     CONTENT=$CONTENT$'\n'$arg
 done
 
-mkdir /etc/systemd/system/$unit.service.d/
+mkdir -p /etc/systemd/system/$unit.service.d/
 echo "$CONTENT" > /etc/systemd/system/$unit.service.d/10-override.conf
