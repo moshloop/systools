@@ -8,37 +8,37 @@ cert=$1
 # fi
 echo "Installing cert: $1"
 
+if [[ "$1" == *":443"* ]]; then
+  echo "Extracting certs from $1"
+  openssl s_client   -showcerts -connect $1 </dev/null 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/certs
+  cert=/tmp/certs
+fi
+
 
 certs=$(openssl version -d | cut -d":" -f2 | sed 's|"||g' | sed 's| ||')
-echo "Installing $certs/cert.pem "
+echo "Installing into: $certs/cert.pem "
 cat $cert >> $certs/cert.pem
 
 if [[ -e "/usr/local/etc/openssl/cert.pem" && "/usr/local/etc/openssl" != "$cert" ]]; then
-    echo "Installing /usr/local/etc/openssl/cert.pem "
+    echo "Installing into: /usr/local/etc/openssl/cert.pem "
     cat $cert >> /usr/local/etc/openssl/cert.pem
 fi
 #
 
 for python in python python2 python3; do
+  if which $python ; then
     for site in $($python -c "import site; print('\n'.join(site.getsitepackages()))"); do
         if [[ -e $site ]]; then
            site=$(realpath $site)
            echo $site
            for certs in $(find $site -name "certs.py"); do
                 for pem in $($python $certs); do
-                  echo "Importing into $pem"
+                  echo "Installing into $pem"
                   echo "# imported from $cert" >> $pem
                   cat $cert >> $pem
                 done
            done
         fi
     done
+  fi
 done
-
-# for python in python python2.7 python3; do
-#     find ./$($python -c 'import pip; print(pip.__path__)') -name "requests/certs.py"
-# done
-
-# cat  $cert >>
-# pip install certifi
-# cat  $cert >> $(python -c 'import certifi; print(certifi.where())')
