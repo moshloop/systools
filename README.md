@@ -19,7 +19,7 @@ cloud-systools is a suite of helpers and small CLI's tools designed to make the 
 | create_service_account   | Creates a new user and home directory meant for for running services | `create_service_account java`                      |
 | bootstrap_volume         | Partitions, formats and mounts a volume                      | `bootstrap_volume {dev} {mount} {type} [owner]`    |
 | port.py                  | Pings all ports on all A records returned                    | `port.py google.com 80,443`                        |
-|                          |                                                              |                                                    |
+| update_secret            | Adds/Updates an entry in **/etc/secrets.json**               | `update_secret DB_PASS random`                     |
 
 ### AWS Specific Tools
 
@@ -30,6 +30,7 @@ cloud-systools is a suite of helpers and small CLI's tools designed to make the 
 | aws_list_targets        | List all instances registered with an ELB                    | `aws_list_targets {elb name}`                     |
 | aws_register_target     | Register an instance with an ELB                             | `aws_register_target {elb} {instance-id}`         |
 | aws_deregister_target   | De-register an instance with an ELB                          | `aws_deregister_target {elb} {instance-id}`       |
-| aws_environment_updater | Updates **/etc/environment** with the IP's of instance groups and  **/etc/secrets.json** with SSM secrets | `install_timer /usr/bin/aws_environment_updater ` |
+| aws_environment_updater | Updates **/etc/environment** with the IP's of instance groups and | `install_timer /usr/bin/aws_environment_updater ` |
+| aws_secret_updater      | Updates **/etc/secrets.json** with SSM secrets               | `install_timer /usr/bin/aws_secret_updater`       |
 | install_aws_codecommit  | Configures git credentials to use AWS                        | `install_aws_codecommit [profile]`                |
 
