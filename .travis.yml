@@ -6,9 +6,10 @@ script:  make
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
+  file_glob: true
   file:
-    - *.rpm
-    - *.deb
+    - "*.rpm"
+    - "*.deb"
   skip_cleanup: true
   on:
     tags: true
