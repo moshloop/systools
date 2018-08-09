@@ -1,0 +1,13 @@
+sudo: required
+services:
+  - docker
+script:  make
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file:
+    - *.rpm
+    - *.deb
+  skip_cleanup: true
+  on:
+    tags: true
