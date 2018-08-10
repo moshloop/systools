@@ -1,14 +1,10 @@
 #!/bin/bash
 
 name=$(basename $1)
-# cert=/etc/ssl/certs/$name
 cert=$1
-# if [[ -e $cert ]]; then
-#     exit 0
-# fi
 echo "Installing cert: $1"
 
-if [[ "$1" == *":443"* ]]; then
+if [[ "$1" == *":"* ]]; then
   echo "Extracting certs from $1"
   openssl s_client   -showcerts -connect $1 </dev/null 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/certs
   cert=/tmp/certs

@@ -3,16 +3,14 @@
 if [[ "$1" == "" ]]; then
     echo "USAGE: install_rpm  <name|url> [name2|url2]"
     echo "Check if a package exists before attempting to install, exits with 1 if any packages get installed"
-    exit 0
 fi
-code=0
+
 for pkg in "$@"
 do
     name=$( basename $pkg)
     name=${name%.*}
     tmp=/tmp/$(basename $pkg)
     if ! rpm -q $name  2>&1 > /dev/null;  then
-        code=1
         if [[ "$pkg" == *"http:"* || "$pkg" == *"https://"* ]]; then
             curl -k $pkg > $tmp
             yum --nogpgcheck -y  localinstall  $tmp
@@ -23,4 +21,3 @@ do
     fi
 done
 
-exit $code
