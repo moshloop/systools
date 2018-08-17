@@ -2,12 +2,19 @@
 
 name=$(basename $1)
 cert=$1
+certname=cert
 echo "Installing cert: $1"
 
-if [[ "$1" == *":"* ]]; then
+if [[ "$1" == *".pem" ]]; then
+  echo "Downloading certificate from $1"
+  curl $1 > /tmp/certs
+  cert=/tmp/certs
+  certname=$(basename $1)
+elif [[ "$1" == *":"* ]]; then
   echo "Extracting certs from $1"
   openssl s_client   -showcerts -connect $1 </dev/null 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/certs
   cert=/tmp/certs
+  certname=$(basename $1)
 fi
 
 
@@ -19,10 +26,21 @@ if [[ -e "/usr/local/etc/openssl/cert.pem" && "/usr/local/etc/openssl" != "$cert
     echo "Installing into: /usr/local/etc/openssl/cert.pem "
     cat $cert >> /usr/local/etc/openssl/cert.pem
 fi
-#
+
+if which update-ca-trust  2>&1 > /dev/null; then
+  echo "Updating ca certs via update-ca-trust"
+  cp $cert /usr/share/pki/ca-trust-source/$certname.crt
+  update-ca-trust extract
+fi
+
+if which update-ca-certificates 2>&1 > /dev/null; then
+  echo "Updating ca certs via update-ca-certificates"
+  cp $cert /usr/local/share/ca-certificates/$certname.crt
+  update-ca-certificates
+fi
 
 for python in python python2 python3; do
-  if which $python ; then
+  if which $python 2>&1 > /dev/null ; then
     for site in $($python -c "import site; print('\n'.join(site.getsitepackages()))"); do
         if [[ -e $site ]]; then
            site=$(realpath $site)
