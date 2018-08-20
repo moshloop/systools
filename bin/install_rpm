@@ -2,7 +2,8 @@
 
 if [[ "$1" == "" ]]; then
     echo "USAGE: install_rpm  <name|url> [name2|url2]"
-    echo "Check if a package exists before attempting to install, exits with 1 if any packages get installed"
+    echo "Check if a package exists before attempting to install"
+    exit 0
 fi
 
 for pkg in "$@"
