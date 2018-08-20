@@ -1,7 +1,7 @@
 #!/bin/bash
 if [[ "$1" == "" ]]; then
     echo "USAGE: install_bin  <name|url> [name2|url2]"
-    echo "Check if a bin exists before attempting to install, exits with 1 if any packages get installed"
+    echo "Check if a bin exists before attempting to install"
     exit 0
 fi
 
@@ -27,7 +27,7 @@ for pkg in "$@"; do
     fi
     if [[ -e $tmp/$base ]]; then
         mv $tmp/$base $BIN/$bin
-    elif [[ -e $tmp/bin ]]; then
+    elif [[ -e $tmp/$bin ]]; then
         mv $tmp/$bin $BIN/$bin
     else
         echo "Unable to detect bin name in $(ls)"
