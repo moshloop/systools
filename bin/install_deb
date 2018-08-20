@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [[ "$1" == "" ]]; then
+    echo "USAGE: install_deb  <url> [url2]"
+    exit 0
+fi
+
+for pkg in "$@"
+do
+    name=$( basename $pkg)
+    if !dpkg --get-selections | grep ${name%.*}; then
+        echo "Installing $name"
+        wget -O $name $pkg
+        dpkg -i $name
+        rm $name
+    fi
+done
