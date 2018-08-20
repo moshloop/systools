@@ -8,9 +8,9 @@ fi
 for pkg in "$@"
 do
     name=$( basename $pkg)
-    if !dpkg --get-selections | grep ${name%.*}; then
+    if ! dpkg --get-selections | grep ${name%.*}; then
         echo "Installing $name"
-        wget -O $name $pkg
+        wget --no-check-certificate -O $name $pkg
         dpkg -i $name
         rm $name
     fi
