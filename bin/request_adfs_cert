@@ -241,13 +241,17 @@ key = rsa.generate_private_key(
     backend=default_backend()
 )
 
+
+
+names = []
+
+for name in options.cn.split(","):
+    names.append(x509.DNSName(name))
 # Generate a CSR
 csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, options.cn),
 ])).add_extension(
-    x509.SubjectAlternativeName([
-        x509.DNSName(options.cn),
-    ]),
+    x509.SubjectAlternativeName(names),
     critical=False,
 ).sign(key, hashes.SHA256(), default_backend())
 
