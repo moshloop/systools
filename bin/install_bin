@@ -24,11 +24,15 @@ for pkg in "$@"; do
     if [[ "$name" != "$base" ]]; then
         cd $tmp
         extract $name
+        [[ -e "$name" ]] && rm $name
     fi
     if [[ -e $tmp/$base ]]; then
         mv $tmp/$base $BIN/$bin
     elif [[ -e $tmp/$bin ]]; then
         mv $tmp/$bin $BIN/$bin
+    elif [[ "$(expr $(ls | wc -l))" == 1 ]]; then
+        bin=$(ls)
+        mv $(ls) $BIN/
     else
         echo "Unable to detect bin name in $(ls)"
         exit 1
