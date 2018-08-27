@@ -21,7 +21,7 @@ parser = OptionParser()
 parser.add_option("--adfs", help="The hostname of an Active Directors Certificate Services (ADCS) server")
 parser.add_option("--template", help="The ADFS Certificate template to use")
 parser.add_option("--cn", help="Common name for the certificate")
-parser.add_option("--out", help="Where to save the signed certificate")
+parser.add_option("--out", help="Where to save the signed certificate", default="cert")
 (options, args) = parser.parse_args()
 
 
@@ -245,12 +245,12 @@ key = rsa.generate_private_key(
 
 
 names = []
-
+import six
 for name in options.cn.split(","):
-    names.append(x509.DNSName(name))
-# Generate a CSR
+    if name != "":
+        names.append(x509.DNSName(six.text_type(name, "utf-8")))
 csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-    x509.NameAttribute(NameOID.COMMON_NAME, options.cn),
+    x509.NameAttribute(NameOID.COMMON_NAME, six.text_type(options.cn, "utf-8")),
 ])).add_extension(
     x509.SubjectAlternativeName(names),
     critical=False,
