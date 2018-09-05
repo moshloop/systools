@@ -4,8 +4,11 @@ name=$(basename $1)
 cert=$1
 certname=cert
 echo "Installing cert: $1"
-
-if [[ "$1" == *".pem" ]]; then
+roots="/etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/ca-bundle.pem /etc/pki/tls/cacert.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /usr/local/etc/openssl/cert.pem"
+if [[ "$1" == "/"* ]]; then
+  cert=$1
+  certname=$(basename $1)
+elif [[ "$1" == *".pem" ]]; then
   echo "Downloading certificate from $1"
   curl $1 > /tmp/certs
   cert=/tmp/certs
@@ -15,16 +18,6 @@ elif [[ "$1" == *":"* ]]; then
   openssl s_client   -showcerts -connect $1 </dev/null 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/certs
   cert=/tmp/certs
   certname=$(basename $1)
-fi
-
-
-certs=$(openssl version -d | cut -d":" -f2 | sed 's|"||g' | sed 's| ||')
-echo "Installing into: $certs/cert.pem "
-cat $cert >> $certs/cert.pem
-
-if [[ -e "/usr/local/etc/openssl/cert.pem" && "/usr/local/etc/openssl" != "$cert" ]]; then
-    echo "Installing into: /usr/local/etc/openssl/cert.pem "
-    cat $cert >> /usr/local/etc/openssl/cert.pem
 fi
 
 if which update-ca-trust  2>&1 > /dev/null; then
@@ -44,15 +37,25 @@ for python in python python2 python3; do
     for site in $($python -c "import site; print('\n'.join(site.getsitepackages()))"); do
         if [[ -e $site ]]; then
            site=$(realpath $site)
-           echo $site
            for certs in $(find $site -name "certs.py"); do
                 for pem in $($python $certs); do
-                  echo "Installing into $pem"
-                  echo "# imported from $cert" >> $pem
-                  cat $cert >> $pem
+                  roots="$roots $pem"
                 done
            done
         fi
     done
   fi
 done
+
+roots="$roots $(openssl version -d | cut -d":" -f2 | sed 's|"||g' | sed 's| ||')"
+roots=$(echo $roots | tr " " "\n" | sort | uniq)
+for root in $roots; do
+  if [[ -d "$root/certs" ]]; then
+    echo "Copying into: $root/certs"
+    cp $cert $root/certs/$certname
+  elif [[ -e "$root" ]]; then
+    echo "Installing into: $root"
+    cat $cert >> $root
+  fi
+done
+
