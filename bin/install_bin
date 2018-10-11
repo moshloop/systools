@@ -20,7 +20,7 @@ for pkg in "$@"; do
     fi
 
     tmp=$(mktemp -d)
-    wget -O $tmp/$name --no-check-certificate $pkg
+    wget -nv -O $tmp/$name --no-check-certificate $pkg
     if [[ "$name" != "$base" ]]; then
         cd $tmp
         extract $name

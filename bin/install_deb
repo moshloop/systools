@@ -10,7 +10,7 @@ do
     name=$( basename $pkg)
     if ! dpkg --get-selections | grep ${name%.*}; then
         echo "Installing $name"
-        wget --no-check-certificate -O $name $pkg
+        wget -nv --no-check-certificate -O $name $pkg
         dpkg -i $name
         rm $name
     fi
