@@ -1,9 +1,9 @@
 NAME=systools
-tag := $(shell git tag --points-at HEAD )
+VERSION := $(shell git tag --points-at HEAD )
 
-ifdef tag
+ifdef VERSION
 else
-  tag := $(shell git describe --abbrev=0 --tags)-debug
+  VERSION := $(shell git describe --abbrev=0 --tags)-debug
 endif
 
 
