@@ -6,6 +6,9 @@ if [[ "$1" == "" ]]; then
     exit 0
 fi
 
+if [[ "$DEBUG" == "true" ]]; then
+    set -vx
+fi
 BIN=/usr/bin
 
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -29,19 +32,28 @@ for pkg in "$@"; do
         extract $name
         [[ -e "$name" ]] && rm $name
     fi
+
+    contents=$(find $tmp -maxdepth 1 -mindepth 1)
+    if [[ -d $contents ]]; then
+        # unwrap a single directory
+        tmp=$contents
+    fi
+
     if [[ -e $tmp/$base ]]; then
         mv $tmp/$base $BIN/$bin
     elif [[ -e $tmp/$name ]]; then
         mv $tmp/$name $BIN/$bin
     elif [[ -e $tmp/$bin ]]; then
         mv $tmp/$bin $BIN/$bin
-    elif [[ "$(expr $(ls | wc -l))" == 1 ]]; then
-        bin=$(ls)
-        mv $(ls) $BIN/
     else
-        echo "Unable to detect bin name in $(ls)"
-        exit 1
+        # nothing found, search for the first executable
+        bin=$(find $tmp -type f -executable | head -n1)
+        if [[ "$bin" == "" ]]; then
+            echo "Unable to detect executable in $(ls)"
+            exit 1
+        fi
+        mv $bin $BIN/
+        exit 0
     fi
     chmod +x $BIN/$bin
-
 done
