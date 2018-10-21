@@ -1,7 +1,8 @@
 #!/bin/bash
 if [[ "$1" == "" ]]; then
     echo "USAGE: install_bin  <name|url> [name2|url2]"
-    echo "Check if a bin exists before attempting to install"
+    echo "Check if a binary exists before attempting to download and install it"
+    echo "Override binary name using: bin_name=name install_bin ..."
     exit 0
 fi
 
@@ -12,12 +13,14 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 for pkg in "$@"; do
-    name=$( basename $pkg)
+    name=$(basename $pkg)
     base=${name%.*} # remove extension
-    bin=$(echo $base | cut -d_ -f1) # strip off os_platform like params
+    bin=${bin_name:-$(echo $base | cut -d_ -f1)} # strip off os_platform like params
     if [[  "$force" != "true" && -e $BIN/$bin ]]; then
         exit 0
     fi
+
+    echo "Installing $BIN/$bin"
 
     tmp=$(mktemp -d)
     wget -nv -O $tmp/$name --no-check-certificate $pkg
@@ -28,6 +31,8 @@ for pkg in "$@"; do
     fi
     if [[ -e $tmp/$base ]]; then
         mv $tmp/$base $BIN/$bin
+    elif [[ -e $tmp/$name ]]; then
+        mv $tmp/$name $BIN/$bin
     elif [[ -e $tmp/$bin ]]; then
         mv $tmp/$bin $BIN/$bin
     elif [[ "$(expr $(ls | wc -l))" == 1 ]]; then
