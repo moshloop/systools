@@ -28,9 +28,11 @@ for pkg in "$@"; do
     tmp=$(mktemp -d)
     wget -nv -O $tmp/$name --no-check-certificate $pkg
     if [[ "$name" != "$base" ]]; then
+        # binary is probably compressed tar.gz or other archive
         cd $tmp
-        extract $name
-        [[ -e "$name" ]] && rm $name
+        if extract $name && [[ -e $name ]]; then
+            rm $name
+        fi
     fi
 
     contents=$(find $tmp -maxdepth 1 -mindepth 1)
