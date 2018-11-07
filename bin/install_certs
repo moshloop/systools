@@ -16,6 +16,14 @@ install_cert() {
     update-ca-certificates
   fi
 
+  if [[ -e $JAVA_HOME/jre/lib/security/cacerts ]]; then
+       echo "Installing into Java cacerts"
+       $JAVA_HOME/bin/keytool -import -noprompt -trustcacerts \
+                -keystore  $JAVA_HOME/jre/lib/security/cacerts \
+                -storepass changeit -keypass changeit \
+                -alias "$desc" \
+                -file $1
+  fi
 
   for python in python python2 python3; do
     if which $python 2>&1 > /dev/null ; then
@@ -67,6 +75,11 @@ elif [[ "$1" == *":"* ]]; then
   echo "Extracting certs from $1"
   openssl s_client   -showcerts -connect $1 </dev/null 2>&1 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $tmp/cert.pem
 
+  if [[ "$(uname)" == "Darwin" ]]; then
+      csplit -k   -f "" -b  $tmp/%02d.pem $tmp/cert.pem "/END CERTIFICATE/+1" {10}
+  else
+      csplit -z -k   -f "" -b  $tmp/%02d.pem $tmp/cert.pem "/END CERTIFICATE/+1" {10}
+  fi
   csplit -z -k   -f "" -b  $tmp/%02d.pem $tmp/cert.pem "/END CERTIFICATE/+1" {10}
   rm $tmp/cert.pem
   ls $tmp
