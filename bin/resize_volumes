@@ -1,0 +1,19 @@
+#!/bin/bash
+
+volume=$(lvdisplay -c | cut -d: -f1 | tr -d '[:space:]')
+device=$(pvdisplay -c | cut -d: -f1 | tr -d '[:space:]')
+
+echo "Extending $volume on $device"
+
+dev=${device:0:8}
+part=${device:8:1}
+
+growpart $dev $part
+pvresize $device
+lvextend $volume $device
+
+if mount | grep $volume | grep xfs; then
+  xfs_growfs $volume
+else
+  resize2fs $volume
+fi
