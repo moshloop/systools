@@ -8,6 +8,13 @@ echo "Extending $volume on $device"
 dev=${device:0:8}
 part=${device:8:1}
 
+extended=$(fdisk -l $dev| grep Extended | awk '{print $1}')
+
+if [[ "$extended" != "" ]]; then
+  echo "Growing extended partition: ${extended:8:1} "
+  growpart $dev ${extended:8:1}
+fi
+
 growpart $dev $part
 pvresize $device
 lvextend $volume $device
